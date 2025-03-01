@@ -7,6 +7,8 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+.env
+
 node_modules
 .serverless
 coverage
@@ -24,3 +26,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+
+infra/cdk.out
