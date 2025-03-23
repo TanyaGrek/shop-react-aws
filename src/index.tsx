@@ -15,9 +15,18 @@ const queryClient = new QueryClient({
   },
   mutationCache: new MutationCache({
     onError: (error: any) => {
+      console.log(error);
       window.dispatchEvent(
         new CustomEvent("global-toast", {
           detail: { message: error.message, severity: "error" },
+        })
+      );
+    },
+    onSuccess: (data: any) => {
+      console.log(data);
+      window.dispatchEvent(
+        new CustomEvent("global-toast", {
+          detail: { message: data.message, severity: "success" },
         })
       );
     },

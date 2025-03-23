@@ -1,7 +1,7 @@
 import React from "react";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
-import axios from "axios";
+import axios, { RawAxiosRequestHeaders } from "axios";
 
 type CSVFileImportProps = {
   url: string;
@@ -19,6 +19,17 @@ export default function CSVFileImport({ url, title }: CSVFileImportProps) {
     }
   };
 
+  const onCatchError = (error: any) => {
+    const errorMsg = error?.message
+      ? error?.message
+      : "Oops, looks like something went wrong :(";
+    window.dispatchEvent(
+      new CustomEvent("global-toast", {
+        detail: { message: errorMsg, severity: "error" },
+      })
+    );
+  };
+
   const removeFile = () => {
     setFile(undefined);
   };
@@ -28,6 +39,11 @@ export default function CSVFileImport({ url, title }: CSVFileImportProps) {
 
     if (!file) return;
     const token = localStorage.getItem("authorization_token");
+
+    const headers: Partial<RawAxiosRequestHeaders> = {};
+    if (token) {
+      headers.Authorization = `Basic ${token}`;
+    }
 
     try {
       // Get the presigned URL
@@ -40,9 +56,12 @@ export default function CSVFileImport({ url, title }: CSVFileImportProps) {
         headers: {
           Authorization: token ? `Basic ${token}` : null,
         },
+      }).catch((error) => {
+        onCatchError(error);
       });
       console.log("File to upload: ", file.name);
 
+      if (!response?.data) return;
       console.log("Uploading to: ", response.data);
       const result = await fetch(response.data, {
         method: "PUT",
@@ -50,15 +69,17 @@ export default function CSVFileImport({ url, title }: CSVFileImportProps) {
       });
       console.log("Result: ", result);
       setFile(undefined);
-    } catch (error: any) {
-      const errorMsg = error.response?.message
-        ? error.response?.message
-        : "Oops, looks like something went wrong :(";
       window.dispatchEvent(
         new CustomEvent("global-toast", {
-          detail: { message: errorMsg, severity: "error" },
+          detail: {
+            message: "File was successfully uploaded",
+            severity: "success",
+          },
         })
       );
+    } catch (error) {
+      console.log(error);
+      onCatchError(error);
     }
   };
   return (

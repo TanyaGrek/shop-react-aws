@@ -25,7 +25,12 @@ export const Toast: React.FC<{ children: React.ReactNode }> = ({
   return (
     <>
       {children}
-      <Snackbar open={open} autoHideDuration={3000} onClose={() => setOpen(false)}>
+      <Snackbar
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        open={open}
+        autoHideDuration={3000}
+        onClose={() => setOpen(false)}
+      >
         <Alert severity={severity} onClose={() => setOpen(false)}>
           {message}
         </Alert>
