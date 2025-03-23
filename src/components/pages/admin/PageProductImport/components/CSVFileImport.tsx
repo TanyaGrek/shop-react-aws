@@ -1,7 +1,7 @@
 import React from "react";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
-import axios from "axios";
+import axios, { RawAxiosRequestHeaders } from "axios";
 
 type CSVFileImportProps = {
   url: string;
@@ -19,6 +19,17 @@ export default function CSVFileImport({ url, title }: CSVFileImportProps) {
     }
   };
 
+  const onCatchError = (error: any) => {
+    const errorMsg = error?.message
+      ? error?.message
+      : "Oops, looks like something went wrong :(";
+    window.dispatchEvent(
+      new CustomEvent("global-toast", {
+        detail: { message: errorMsg, severity: "error" },
+      })
+    );
+  };
+
   const removeFile = () => {
     setFile(undefined);
   };
@@ -27,23 +38,49 @@ export default function CSVFileImport({ url, title }: CSVFileImportProps) {
     console.log("uploadFile to", url);
 
     if (!file) return;
+    const token = localStorage.getItem("authorization_token");
 
-    // Get the presigned URL
-    const response = await axios({
-      method: "GET",
-      url,
-      params: {
-        name: encodeURIComponent(file.name),
-      },
-    });
-    console.log("File to upload: ", file.name);
-    console.log("Uploading to: ", response.data);
-    const result = await fetch(response.data, {
-      method: "PUT",
-      body: file,
-    });
-    console.log("Result: ", result);
-    setFile(undefined);
+    const headers: Partial<RawAxiosRequestHeaders> = {};
+    if (token) {
+      headers.Authorization = `Basic ${token}`;
+    }
+
+    try {
+      // Get the presigned URL
+      const response = await axios({
+        method: "GET",
+        url,
+        params: {
+          name: encodeURIComponent(file.name),
+        },
+        headers: {
+          Authorization: token ? `Basic ${token}` : null,
+        },
+      }).catch((error) => {
+        onCatchError(error);
+      });
+      console.log("File to upload: ", file.name);
+
+      if (!response?.data) return;
+      console.log("Uploading to: ", response.data);
+      const result = await fetch(response.data, {
+        method: "PUT",
+        body: file,
+      });
+      console.log("Result: ", result);
+      setFile(undefined);
+      window.dispatchEvent(
+        new CustomEvent("global-toast", {
+          detail: {
+            message: "File was successfully uploaded",
+            severity: "success",
+          },
+        })
+      );
+    } catch (error) {
+      console.log(error);
+      onCatchError(error);
+    }
   };
   return (
     <Box>
